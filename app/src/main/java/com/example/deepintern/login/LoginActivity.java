@@ -1,5 +1,6 @@
-package com.example.deepintern;
+package com.example.deepintern.login;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
@@ -11,9 +12,12 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.deepintern.ApiServices.ApiInteractor;
+import com.example.deepintern.MainActivity;
+import com.example.deepintern.R;
 import com.example.deepintern.models.Login;
 import com.example.deepintern.models.LoginPost;
 import com.example.deepintern.models.Test;
+import com.example.deepintern.util.PrefManager;
 import com.example.deepintern.viewactions.LoginListener;
 import com.example.deepintern.viewactions.TestListener;
 
@@ -25,11 +29,14 @@ public class LoginActivity extends AppCompatActivity implements TestListener, Lo
     String username = "", password="";
     ApiInteractor apiInteractor = new ApiInteractor();
     LoginPost loginPost = new LoginPost();
+    PrefManager prefManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
+
+        prefManager = new PrefManager(this);
 
         et_username = findViewById(R.id.login_username);
         et_password = findViewById(R.id.login_pass);
@@ -64,15 +71,23 @@ public class LoginActivity extends AppCompatActivity implements TestListener, Lo
     @Override
     public void onLoginSuccess(Login login) {
         try {
-            Log.d("login_data",login.getData().getEmail()+"\n"+login.getData().getId());
+            if (login.getData().getEmail().equalsIgnoreCase(username)){
+                prefManager.saveString(PrefManager.EMAIL, username);
+                prefManager.saveString(PrefManager.PASSWORD, password);
+                prefManager.saveString(PrefManager.UID, login.getData().getId());
+                prefManager.saveBoolean(PrefManager.LOGGGEDIN, true);
+                startActivity(new Intent(this, MainActivity.class));
+            }
         }catch (Exception e){
-            Toast.makeText(getApplicationContext(),"something went wrong, pls check credentials", Toast.LENGTH_SHORT).show();
+            Log.d("login_error",e.getLocalizedMessage());
+            Toast.makeText(getApplicationContext(),"invalid email or password!", Toast.LENGTH_SHORT).show();
         }
     }
 
     @Override
     public void onLoginError(String error) {
         Log.d("login_data",error);
+        Toast.makeText(getApplicationContext(),"something went wrong!", Toast.LENGTH_SHORT).show();
     }
 
     private void callTest() {
